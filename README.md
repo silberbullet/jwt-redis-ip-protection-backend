@@ -11,6 +11,74 @@
 </details>
 
 ### 개발환경 
+<details>
+<summary>build.gralde</summary>
+
+```
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.3'
+	id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.tennod'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// SpringBoot
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	 implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-logging'  // Spring Boot 로깅 스타터 (SLF4J와 Logback 포함)
+
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// Lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// Jakarta
+	compileOnly 'jakarta.platform:jakarta.jakartaee-api:10.0.0'
+
+	// Jackson
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	// Util Library
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation 'commons-io:commons-io:2.15.1'
+	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
+	// JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+	//redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// JSON
+	implementation 'org.json:json:20240303'
+
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+```
+</details>
+
+
 |  라이브러리   | 설명 |
 | ------ | ------|
 |     spring-boot-starter   |   Spring boot 환경    |
