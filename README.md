@@ -11,9 +11,12 @@
 </details>
 
 ### 개발환경 
-> FilterChain 기반으로 이루어진 Spring 하위 프레임워크<br>
-> Client Http 통신을 관리하며 주로 인증 및 인가를 담당 <br>
-> **Spring Security가 제공하는 인터페이스, 추상 클래스를 통해 보안 기능 커스텀마이징 가능**
+|  라이브러리   | 설명 |
+| ------ | ------|
+|     spring-boot-starter   |   Spring boot 환경    |
+|     spring-boot-starter-security   |    Spring Security     |
+|     io.jsonwebtoken:jjwt-api:0.12.5   |    JWT 토큰 발급    |
+|     spring-boot-starter-data-redis   |    Spring boot 어플리케이션과 Redis를 연결하기 위함    |
 
 ### 서버에 적용할 보안 기능
 
