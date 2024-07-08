@@ -1,0 +1,12 @@
+spring:
+  application:
+    title: security
+
+server:
+  port: 8001
+
+properties:
+  front:
+    url: http://localhost:8080
+  login:
+    url: /api/login
