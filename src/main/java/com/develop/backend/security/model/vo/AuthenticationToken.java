@@ -5,7 +5,8 @@ import java.util.Collection;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
-import com.develop.backend.security.model.request.LoginRequest;
+import com.develop.backend.security.model.req.LoginRequest;
+import com.develop.backend.security.model.res.LoginResponse;
 
 import lombok.Getter;
 
@@ -24,6 +25,8 @@ public class AuthenticationToken extends AbstractAuthenticationToken {
 
     // 인증 요청 데이터
     private LoginRequest loginRequest;
+    // 인증 응답 데이터
+    private LoginResponse loginResponse;
     // 인증 요청 ip
     private String clientIp;
     // 재발급 대상 여부
@@ -48,8 +51,21 @@ public class AuthenticationToken extends AbstractAuthenticationToken {
         setAuthenticated(false);
     }
 
-    public AuthenticationToken(Collection<? extends GrantedAuthority> authorities) {
+    /**
+     * <p>
+     * 인증 완료 대상
+     * </p>
+     *
+     * @author gyeongwooPark
+     * @param LoginRequest loginRequest
+     * @param boolean      isReissudTarget
+     */
+    public AuthenticationToken(LoginResponse loginResponse, String clientIp, boolean isReissudTarget,
+            Collection<? extends GrantedAuthority> authorities) {
         super(authorities);
+        this.loginResponse = loginResponse;
+        this.clientIp = clientIp;
+        this.isReissudTarget = isReissudTarget;
 
         setAuthenticated(true);
     }

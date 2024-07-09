@@ -17,6 +17,7 @@ import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.develop.backend.security.filter.AuthenticationFilter;
+import com.develop.backend.security.handler.AuthenticationSuccessHandler;
 import com.develop.backend.security.provider.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class SecurityConfig {
 
     private final CorsConfig corsConfig;
     private final AuthenticationManager authenticationManager;
+    private final AuthenticationSuccessHandler authenticationSuccessHandler;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Value("${properties.login.url}")
@@ -57,7 +59,7 @@ public class SecurityConfig {
 
         AuthenticationFilter authenticationFilter = new AuthenticationFilter(permitUrlMatcher, jwtTokenProvider);
         authenticationFilter.setAuthenticationManager(authenticationManager);
-        // authenticationFilter.setAuthenticationSuccessHandler(null);
+        authenticationFilter.setAuthenticationSuccessHandler(authenticationSuccessHandler);
         // authenticationFilter.setAuthenticationFailureHandler(null);
 
         return authenticationFilter;

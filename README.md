@@ -152,14 +152,21 @@ sequenceDiagram
 1. **AuthenticationFilter**
 
    - 특정 로그인 URL에 POST으로 들어온 request의 contentType과 Length를 검증
-   - 로그인 정보와 Client IP 추출
-   - Authentication 객체 생성 후 AuthenticationManger의 authenticate 메소드 처리
+   - JWT 토큰 쿠키, 로그인 정보와 Client IP 추출
+   - JWT 토큰 쿠키 유무에 따른 Authentication 객체 생성
+     - 토큰 존재 시, 로그인 처리 후 재발급 처리 필요
+     - 토큰 미존재 시, 일반 로그인 처리 후 신규 발급
+   - AuthenticationProvider에 인증 객체 전달
 
 2. **AuthenticationProvider**
 
    - AuthenticationManger의 구현체로 실제 인증 처리 담당
    - Authentication 객체와 DB 조회를 통해 인증 처리
+   - 인증 성공 시 인증이 성공된 authentication 반환
 
 3. **AuthenticationSuccessHandler**
 
-   - 인증 성공 시 JWT 토큰 발급와 로그인 정보 반환
+   - 인증 객체 일시 AccessToken과 RefreshToken 발급
+   - 기존 토큰 존재 시, Redis에 저장 된 Refresh 토큰 제거
+   - 쿠키에 토큰 세팅 후 헤더에 추가
+   - response 객체에 컨텐츠 타입과 body (로그인 결과 정보) 작성 후 리턴

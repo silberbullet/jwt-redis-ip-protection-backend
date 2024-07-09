@@ -9,7 +9,7 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.develop.backend.security.exception.LoginAttempException;
-import com.develop.backend.security.model.request.LoginRequest;
+import com.develop.backend.security.model.req.LoginRequest;
 import com.develop.backend.security.model.vo.AuthenticationToken;
 import com.develop.backend.security.provider.JwtTokenProvider;
 import com.develop.backend.utils.UserInfoUtil;

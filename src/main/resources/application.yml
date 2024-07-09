@@ -10,3 +10,18 @@ properties:
     url: http://localhost:8080
   login:
     url: /api/login
+  # JWT Token
+  jwt:
+    domain: localhost
+    secure: false
+    secret-key: Q29weXJpZ2h0MjAyNGJ5VEVOTk9EIFNPTFVUSU9OQWxscmlnaHRzcmVzZXJ2ZWTthZDrhbjrk5zshpTro6jshZjsnZjsgqzsoITshJzrqbTsirnsnbjsl4bsnbTrs7XsoJzsiJjsoJXrsLDtj6wg6riI7KeA
+    # Token 유효 시간
+    access-token:
+      expiration-seconds: 1200 # 20분  # 30 # 30초
+    refresh-token:
+      expiration-seconds: 36000 # 10시간
+    # Cookie 유효 시간
+    access-token-cookie:
+      expiration-seconds: 6000 # 100분
+    refresh-token-cookie:
+      expiration-seconds: 36000 # 10시간
