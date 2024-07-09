@@ -1,4 +1,4 @@
-package com.develop.backend.security.model.request;
+package com.develop.backend.security.model.req;
 
 import lombok.Data;
 
