@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
  * @version 1.0
  * @since 2024.07.
  */
-@Component
 @RequiredArgsConstructor
 @Slf4j
 public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
