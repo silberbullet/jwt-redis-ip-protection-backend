@@ -1,16 +1,11 @@
 package com.develop.backend.security.handler;
 
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import org.springframework.stereotype.Component;
 
 import com.develop.backend.security.model.vo.AuthenticationToken;
 import com.develop.backend.security.provider.JwtTokenProvider;
@@ -41,13 +36,6 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
 
-    @Value("${properties.jwt.domain}")
-    private String domain;
-    @Value("${properties.jwt.access-token-cookie.expiration-seconds}")
-    private int accessCookieExpiration;
-    @Value("${properties.jwt.refresh-token-cookie.expiration-seconds}")
-    private int refreshCookieExpiration;
-
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException, ServletException {
@@ -73,7 +61,7 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
                 jwtTokenProvider.setTokenToRedis(accessToken, refreshToken);
 
                 // 쿠키에 토큰 세팅 후 헤더에 추가
-                response = setTokenInCookie(accessToken, response);
+                response = jwtTokenProvider.setTokenInCookie(accessToken, response);
                 response.setContentType(MediaType.APPLICATION_JSON);
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -103,29 +91,6 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
             response.getWriter().flush();
             response.getWriter().close();
         }
-    }
-
-    /**
-     * <p>
-     * accessToken와 refreshToken 헤더에 세팅
-     * </p>
-     *
-     * @author gyeongwooPark
-     */
-    public HttpServletResponse setTokenInCookie(String accessToken, HttpServletResponse response) {
-
-        ResponseCookie accessCookie = ResponseCookie
-                .from("accessToken", accessToken)
-                .domain(domain)
-                .path("/")
-                .httpOnly(true)
-                .maxAge(accessCookieExpiration)
-                .secure(false)
-                .build();
-
-        response.setHeader("Set-Cookie", accessCookie.toString());
-
-        return response;
     }
 
 }

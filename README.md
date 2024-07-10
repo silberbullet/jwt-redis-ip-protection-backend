@@ -15,15 +15,15 @@
 </details>
 
 <details><summary>Redis 정리</summary>
-1. Key Value 쌍에 비정형 데이터 저장소
-2. 인메모리 데이터 구조
-	- 데이터를 디스크나 외부 저장장치에 저장하는게 아니 RAM에 저장
-	- 데이터를 디스크에서 읽는 것보다 훨씬 빠르게 접근 가능
-	- 고속 데이터 처리, 실시간 분석, 캐싱, 트랜잭션 처리 등에 이용
-	- Spring Data Redis은 Lettuc와 Jedis라는 두 가지 오픈 소스 제공
-3. 캐시 서버 구축
-	- Look aside cache 방식 ( 찾고 없으면 db 조회 후 cache 저장)
-	- Write Back 방식 ( 모든 데이터를 cache에 저장 후 db에 저장 후 삭제)
+1. Key Value 쌍에 비정형 데이터 저장소 </br>
+2. 인메모리 데이터 구조 </br>
+	- 데이터를 디스크나 외부 저장장치에  저장하는게 아니 RAM에 저장 </br>
+	- 데이터를 디스크에서 읽는 것보다 훨씬 빠르게 접근 가능 </br>
+	- 고속 데이터 처리, 실시간 분석, 캐싱, 트랜잭션 처리 등에 이용 </br>
+	- Spring Data Redis은 Lettuc와 Jedis라는 두 가지 오픈 소스 제공 </br>
+3. 캐시 서버 구축 </br>
+	- Look aside cache 방식 ( 찾고 없으면 db 조회 후 cache 저장) </br>
+	- Write Back 방식 ( 모든 데이터를 cache에 저장 후 db에 저장 후 삭제) </br>
 </details>
 
 ### 개발환경
@@ -201,6 +201,14 @@ sequenceDiagram
    - response 객체에 컨텐츠 타입과 body (로그인 결과 정보) 작성 후 리턴
 
 ### Jwt Verification 구현
+
+1. **JwtTokenFilter**
+
+   - Request 객체에서 accessTokenCookie 추출 쿠키 존재 확인
+   - 토큰 존재 시, 토큰에 존재하는 IP와 Request IP 확인
+   - 토큰 유효성 체크 이상 없으면 통과, 만료 시 Redis에서 RefreshToken 추출
+   - RefreshToken 유효 시 AccessToken 재발급 후 Response Header 신규 쿠키 세팅 후 통과
+   - RefreshToken 만료 시, 재 로그인 요청
 
 ### LogOut 구현
 

@@ -11,12 +11,12 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.develop.backend.security.filter.AuthenticationFilter;
+import com.develop.backend.security.filter.JwtTokenFilter;
 import com.develop.backend.security.handler.AuthenticationFailHandler;
 import com.develop.backend.security.handler.AuthenticationSuccessHandler;
 import com.develop.backend.security.provider.JwtTokenProvider;
@@ -78,6 +78,19 @@ public class SecurityConfig {
 
     /**
      * <p>
+     * JwtFilter 등록
+     * </p>
+     * 
+     * @author gyeongwooPark
+     * @return JwtFilter
+     */
+    @Bean
+    public JwtTokenFilter jwtTokenFilter() {
+        return new JwtTokenFilter(jwtTokenProvider);
+    }
+
+    /**
+     * <p>
      * Security 기본 설정
      * </p>
      * 
@@ -88,7 +101,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // => jwt 토큰 방식 사용으로 인해 비활성화 처리
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(c -> c.disable())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 // CORS 설정
@@ -99,28 +112,19 @@ public class SecurityConfig {
                 // HTTP 요청 관리
                 .authorizeHttpRequests(author -> author
                         // 특정 엔드포인트 접근 허용 처리
-                        .requestMatchers("/api/login/**").permitAll()
+                        .requestMatchers("/api/login/**")
+                        .permitAll()
                         // 그 외 모든 요청은 인증 필수 (jwt 토큰 인증)
                         .anyRequest().authenticated())
-        // 예외 핸들링 관리
-        // => 커스텀 인증 Entrypoint/Handler 생성을 통해 예외처리 결과 세팅 및 리턴
-        // => 미인증 사용자 접근(403/UNAUTHORIZED) : authenticationEntryPoint
-        // => 비인가 사용자 접근(401/FORBIDDEN) : accessDeniedHandler
-        // .exceptionHandling(except -> except
-        // .authenticationEntryPoint(authenticationExceptionHandler)
-        // .accessDeniedHandler(accessDeniedExceptionHandler))
-        // // 필터 체인 내에서 순서 설정
-        // => 요청에 대한 사전처리 필요 시 세팅
-        // => ~Before(A,B) : A를 B 이전에 실행
-        // 로그아웃
-        // .addFilterBefore(mcLogoutFilter(), LogoutFilter.class)
-        // // jwt 토큰 유무 확인 및 검증
-        // .addFilterBefore(jwtTokenFilter(),
-        // UsernamePasswordAuthenticationFilter.class)
-        // jwt 토큰 발급
-        // .addFilterAfter(mcAuthenticationFilter(),
-        // UsernamePasswordAuthenticationFilter.class)
-        ;
+
+                // // 필터 체인 내에서 순서 설정
+                // => 요청에 대한 사전처리 필요 시 세팅
+                // => ~Before(A,B) : A를 B 이전에 실행
+                // 로그아웃
+                // .addFilterBefore(mcLogoutFilter(), LogoutFilter.class)
+                // jwt 토큰 발급
+                .addFilterAfter(jwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(authenticationFilter(), JwtTokenFilter.class);
 
         return http.build();
     }

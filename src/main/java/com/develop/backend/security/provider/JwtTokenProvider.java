@@ -11,9 +11,11 @@ import javax.crypto.SecretKey;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
+import com.develop.backend.security.model.res.LoginResponse;
 import com.develop.backend.security.model.vo.AuthenticationToken;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -27,6 +29,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -46,6 +49,11 @@ public class JwtTokenProvider {
         private final Long accessTokenValidateMilliSeconds;
         private final Long refreshTokenValidateMilliSeconds;
         private final RedisTemplate<String, Object> redisTemplate;
+
+        @Value("${properties.jwt.domain}")
+        private String domain;
+        @Value("${properties.jwt.access-token-cookie.expiration-seconds}")
+        private int accessCookieExpiration;
 
         /**
          * <p>
@@ -230,6 +238,35 @@ public class JwtTokenProvider {
 
         /**
          * <p>
+         * RefreshToken에서 신규 AccessToken 발급
+         * </p>
+         *
+         * @author gyeongwooPark
+         * @param String token
+         * @return String
+         */
+        public String getNewAccessToken(String token) {
+                Claims claims = this.getPayloadFromJwtToken(token);
+
+                if (ObjectUtils.isEmpty(claims)) {
+                        throw new JwtException("JWT Token Payload 가 존재 하지 않습니다.");
+                } else {
+                        String userId = claims.get("userId").toString();
+                        String clientIp = claims.get("clientIp").toString();
+
+                        LoginResponse loginResponse = new LoginResponse();
+                        loginResponse.setUserId(userId);
+
+                        AuthenticationToken authenticationToken = new AuthenticationToken(loginResponse, clientIp,
+                                        false, null);
+
+                        return this.createAccessToken(authenticationToken);
+                }
+
+        }
+
+        /**
+         * <p>
          * 토큰 레디스에 저장
          * </p>
          *
@@ -268,5 +305,28 @@ public class JwtTokenProvider {
          */
         public void deleteTokenToRedis(String accessToken) throws JsonProcessingException {
                 redisTemplate.delete(accessToken);
+        }
+
+        /**
+         * <p>
+         * accessToken 헤더에 세팅
+         * </p>
+         *
+         * @author gyeongwooPark
+         */
+        public HttpServletResponse setTokenInCookie(String accessToken, HttpServletResponse response) {
+
+                ResponseCookie accessCookie = ResponseCookie
+                                .from("accessToken", accessToken)
+                                .domain(domain)
+                                .path("/")
+                                .httpOnly(true)
+                                .maxAge(accessCookieExpiration)
+                                .secure(false)
+                                .build();
+
+                response.setHeader("Set-Cookie", accessCookie.toString());
+
+                return response;
         }
 }

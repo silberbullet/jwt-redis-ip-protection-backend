@@ -1,6 +1,5 @@
 package com.develop.backend.security.service;
 
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
 import com.develop.backend.security.model.res.LoginResponse;

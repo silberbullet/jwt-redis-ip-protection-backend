@@ -5,11 +5,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.springframework.lang.NonNull;
-import org.springframework.lang.NonNullApi;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.develop.backend.security.exception.NonIncludedTokenException;
+import com.develop.backend.security.exception.RedisValidateException;
 import com.develop.backend.security.provider.JwtTokenProvider;
+import com.develop.backend.utils.UserInfoUtil;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -56,16 +57,23 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         try {
             // 쿠키 추출
             Optional<Cookie> accessTokenCookie = jwtTokenProvider.getAccessTokenFromCookies(request);
+            String url = request.getRequestURI();
 
             // 쿠키 존재
             if (accessTokenCookie.isPresent()) {
                 // 토큰 추출
                 String accessToken = accessTokenCookie.get().getValue();
 
+                // 요청 IP와 토큰 IP 검사
+                String clientIp = UserInfoUtil.getClientIp(request);
+                String accessTokenIp = jwtTokenProvider.getUserIpFromJwtToken(accessToken);
+
+                if (!clientIp.equals(accessTokenIp)) {
+                    throw new NonIncludedTokenException("Unverified Request IP address");
+                }
+
                 // 토큰 유효성 체크
                 if (jwtTokenProvider.validateJwtToken(accessToken)) {
-
-                    // 사용자 ip
 
                     // 토큰 유효시 doFilter 처리
                     filterChain.doFilter(request, response);
@@ -78,26 +86,43 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                     // refreshToken 유효성 검사
                     // refreshToken이 유효시 accessToken 재발급 처리
                     if (jwtTokenProvider.validateJwtToken(refeshToken)) {
-                        // To-Do 재발급 처리
 
+                        // 신규 AccessToken 발급
+                        String newAccessToken = jwtTokenProvider.getNewAccessToken(refeshToken);
+
+                        // Redis 기존 AccessToken 삭제
+                        jwtTokenProvider.deleteTokenToRedis(accessToken);
+
+                        // Redis 신규 AccessToken 등록
+                        jwtTokenProvider.setTokenToRedis(newAccessToken, refeshToken);
+
+                        // 신규 AccessToken 헤더에 세팅
+                        response = jwtTokenProvider.setTokenInCookie(newAccessToken, response);
+
+                        filterChain.doFilter(request, response);
                     }
                     // refreshToken 만료 시 재로그인 진행 필요
                     else {
-
+                        throw new RedisValidateException("재 로그인이 필요합니다.");
                     }
                 }
-
             }
             // 쿠키 미 존재
             else {
                 throw new NonIncludedTokenException("JWT Access Token Not Included");
             }
-        } catch (NonIncludedTokenException e) {
+        } catch (NonIncludedTokenException | RedisValidateException e) {
             log.error("JwtTokenFilter error");
             e.printStackTrace();
             response.setContentType(MediaType.APPLICATION_JSON);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+            response.getWriter().write(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setContentType(MediaType.APPLICATION_JSON);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE); // 406
             response.getWriter().write(e.getMessage());
         }
     }
