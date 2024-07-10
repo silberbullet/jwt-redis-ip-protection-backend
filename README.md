@@ -14,6 +14,18 @@
 <img src="https://chathurangat.wordpress.com/wp-content/uploads/2017/08/blogpost-spring-security-architecture.png" width="600" height="400">
 </details>
 
+<details><summary>Redis 정리</summary>
+1. Key Value 쌍에 비정형 데이터 저장소
+2. 인메모리 데이터 구조
+	- 데이터를 디스크나 외부 저장장치에 저장하는게 아니 RAM에 저장
+	- 데이터를 디스크에서 읽는 것보다 훨씬 빠르게 접근 가능
+	- 고속 데이터 처리, 실시간 분석, 캐싱, 트랜잭션 처리 등에 이용
+	- Spring Data Redis은 Lettuc와 Jedis라는 두 가지 오픈 소스 제공
+3. 캐시 서버 구축
+	- Look aside cache 방식 ( 찾고 없으면 db 조회 후 cache 저장)
+	- Write Back 방식 ( 모든 데이터를 cache에 저장 후 db에 저장 후 삭제)
+</details>
+
 ### 개발환경
 
 <details>
@@ -145,6 +157,22 @@ sequenceDiagram
     LogOutFilter-->>Client: No JWT Token In Cookie
 ```
 
+### AccessToken과 RefreshToken 관리방안
+
+> AccessToken은 시간을 간소화 하고 JwtFilter에서는 유효성 검사 및 추가로 request에 Client IP 와 AccessToken 내에 존재한 IP를 대조한다. (보안성 강화) </br>
+> RefreshToken은 시간을 길게 잡아 AccessToken이 만료 될 시 재발급 시에 검증하는 토큰으로 활용한다. </br>
+
+1. **Client (AccssToken, RefreshToken) | Redis (RefreshToken)**
+
+   - Client에 Token을 쿠키로 담아 줄 시 HttpOnly 설정을 통해 XSS를 예방 가능
+   - 서버에 접근 시 RefreshToken을 탈취 한다면 서버는 단순 Redis와 비교를 해서 Access를 발급하기 때문에 해커는 AccessToken을 발급 받을 수 있음
+
+2. **Client (AccssToken) | Redis (AccssToken, RefreshToken)**
+
+   - RefreshToken을 Redis에서 보관하고 있다고 했을 때, Client가 가지고 있을 때 보다 더 안전성이 우수하다고 생각
+   - AccessToken이 만료되면 Redis에 저장된 AccessToken 키를 전제로 RefreshToken이 유효하다면 AccessToken을 재발급하고 Redis는 새로 갱신된 Access와 기존 Refresh로 업데이트
+   - **채택**
+
 ## ▶ 구현
 
 ### Authentication 구현
@@ -168,5 +196,12 @@ sequenceDiagram
 
    - 인증 객체 일시 AccessToken과 RefreshToken 발급
    - 기존 토큰 존재 시, Redis에 저장 된 Refresh 토큰 제거
-   - 쿠키에 토큰 세팅 후 헤더에 추가
+   - 발급 된 AccessToken과 RefreshToken은 Redis에 저장
+   - 쿠키에 (AccessToken) 토큰 세팅 후 헤더에 추가
    - response 객체에 컨텐츠 타입과 body (로그인 결과 정보) 작성 후 리턴
+
+### Jwt Verification 구현
+
+### LogOut 구현
+
+## ▶ 테스트

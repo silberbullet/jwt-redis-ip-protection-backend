@@ -3,6 +3,8 @@ package com.develop.backend.security.handler;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -15,9 +17,12 @@ import com.develop.backend.security.provider.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.MediaType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * <p>
@@ -31,6 +36,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -59,21 +65,44 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
                 // 기존 토큰이 존재 시
                 if (authenticationToken.isReissudTarget()) {
                     // Redis에 저장 된 Refresh 토큰 제거
-
+                    Optional<Cookie> accessTokenCookie = jwtTokenProvider.getAccessTokenFromCookies(request);
+                    String deleteToken = accessTokenCookie.get().getValue();
+                    jwtTokenProvider.deleteTokenToRedis(deleteToken);
                 }
 
+                // 레디스 Refresh Token 저장
+                jwtTokenProvider.setTokenToRedis(accessToken, refreshToken);
+
                 // 쿠키에 토큰 세팅 후 헤더에 추가
-                response = setTokenInCookie(accessToken, refreshToken, response);
-                response.setContentType("application/json");
-                response.setCharacterEncoding("utf-8");
+                response = setTokenInCookie(accessToken, response);
+                response.setContentType(MediaType.APPLICATION_JSON);
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.setStatus(HttpServletResponse.SC_OK);
 
                 String body = objectMapper.writeValueAsString(authenticationToken.getLoginResponse());
                 response.getWriter().write(body);
-
+            } else {
+                response.setContentType(MediaType.APPLICATION_JSON);
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("AuthenticationSuccessHandler error");
             }
+        } catch (IllegalArgumentException e) {
+            log.error("AuthenticationSuccessHandler error");
+            e.printStackTrace();
+            response.setContentType(MediaType.APPLICATION_JSON);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
+            response.getWriter().write("Authentication principal has not allowed");
+            response.getWriter().flush();
+            response.getWriter().close();
         } catch (Exception e) {
-
+            response.setContentType(MediaType.APPLICATION_JSON);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // 500
+            response.getWriter().write("An error occurred during authentication success handling");
+            response.getWriter().flush();
+            response.getWriter().close();
         }
     }
 
@@ -84,10 +113,10 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
      *
      * @author gyeongwooPark
      */
-    public HttpServletResponse setTokenInCookie(String accessToken, String refreshToken, HttpServletResponse response) {
+    public HttpServletResponse setTokenInCookie(String accessToken, HttpServletResponse response) {
 
         ResponseCookie accessCookie = ResponseCookie
-                .from("accessCookie", accessToken)
+                .from("accessToken", accessToken)
                 .domain(domain)
                 .path("/")
                 .httpOnly(true)
@@ -95,17 +124,7 @@ public class AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccess
                 .secure(false)
                 .build();
 
-        ResponseCookie refreshCookie = ResponseCookie
-                .from("refreshCookie", refreshToken)
-                .domain(domain)
-                .path("/")
-                .httpOnly(true)
-                .maxAge(refreshCookieExpiration)
-                .secure(false)
-                .build();
-
         response.setHeader("Set-Cookie", accessCookie.toString());
-        response.addHeader("Set-Cookie", refreshCookie.toString());
 
         return response;
     }
