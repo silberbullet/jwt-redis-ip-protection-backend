@@ -5,10 +5,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.develop.backend.security.exception.NonIncludedTokenException;
 import com.develop.backend.security.exception.RedisValidateException;
+import com.develop.backend.security.model.vo.AuthenticationToken;
 import com.develop.backend.security.provider.JwtTokenProvider;
 import com.develop.backend.utils.UserInfoUtil;
 
@@ -57,7 +61,6 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         try {
             // 쿠키 추출
             Optional<Cookie> accessTokenCookie = jwtTokenProvider.getAccessTokenFromCookies(request);
-            String url = request.getRequestURI();
 
             // 쿠키 존재
             if (accessTokenCookie.isPresent()) {
@@ -75,6 +78,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 // 토큰 유효성 체크
                 if (jwtTokenProvider.validateJwtToken(accessToken)) {
 
+                    this.setSecurityContexHolder(accessToken);
                     // 토큰 유효시 doFilter 처리
                     filterChain.doFilter(request, response);
                 }
@@ -98,6 +102,9 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
                         // 신규 AccessToken 헤더에 세팅
                         response = jwtTokenProvider.setTokenInCookie(newAccessToken, response);
+
+                        // 인증 객체 등록
+                        this.setSecurityContexHolder(newAccessToken);
 
                         filterChain.doFilter(request, response);
                     }
@@ -125,6 +132,25 @@ public class JwtTokenFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_NOT_ACCEPTABLE); // 406
             response.getWriter().write(e.getMessage());
         }
+    }
+
+    /**
+     * <p>
+     * 인증 된 accessToken 으로 SecurityContexHolder 인증 객체 등록
+     * </p>
+     *
+     * @author gyeongwooPark
+     * @param accessToken accessToken
+     */
+    public void setSecurityContexHolder(String accessToken) {
+        // 인증 객체 발급
+        AuthenticationToken authenticationToken = jwtTokenProvider.getAuthenticationToken(accessToken);
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authenticationToken);
+
+        // SecurityContextHolder 인증 객체 저장
+        SecurityContextHolder.setContext(context);
     }
 
 }

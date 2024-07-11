@@ -101,7 +101,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 // => jwt 토큰 방식 사용으로 인해 비활성화 처리
-                .csrf(c -> c.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 // CORS 설정
@@ -112,17 +112,9 @@ public class SecurityConfig {
                 // HTTP 요청 관리
                 .authorizeHttpRequests(author -> author
                         // 특정 엔드포인트 접근 허용 처리
-                        .requestMatchers("/api/login/**")
-                        .permitAll()
+                        .requestMatchers("/api/login/**").permitAll()
                         // 그 외 모든 요청은 인증 필수 (jwt 토큰 인증)
                         .anyRequest().authenticated())
-
-                // // 필터 체인 내에서 순서 설정
-                // => 요청에 대한 사전처리 필요 시 세팅
-                // => ~Before(A,B) : A를 B 이전에 실행
-                // 로그아웃
-                // .addFilterBefore(mcLogoutFilter(), LogoutFilter.class)
-                // jwt 토큰 발급
                 .addFilterAfter(jwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authenticationFilter(), JwtTokenFilter.class);
 

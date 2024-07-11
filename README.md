@@ -210,6 +210,12 @@ sequenceDiagram
    - RefreshToken 유효 시 AccessToken 재발급 후 Response Header 신규 쿠키 세팅 후 통과
    - RefreshToken 만료 시, 재 로그인 요청
 
+   - **Spring SecurityContextHolder**
+     - dofilter 넘어 가기 전 반드시 token에서 Authentication 객체를 SecurityContextHolder 등록 해줘야 한다.
+     - 등록이 없다면 그 뒤에 AnonymousAuthenticationFilter, ExceptionTranslationFilter, AuthorizationFilter에서 요청이 거부되고 403 혹은 401 에러를 반환한다.
+     - SecurityContextHolder은 Spring Security 전역 객체라 생각해야한다. 다음 필터들이 인증된 객체를 가지고 security 프로세스를 흘러가기에 요청 쓰레드 마다 인증이 되었다면 인증 객체를 꼭 등록이 필요하다
+     - **Spring Security 공식 문서에도 나와 있지만 SecurityContextHolder는 기본적으로 스레드 로컬 변수를 사용하여 보안 컨텍스트를 관리하는데, SecurityContextHolder.getContext() 메서드를 사용하여 보안 컨텍스트를 설정할 때, 동일한 보안 컨텍스트를 여러 스레드에서 동시에 접근하고 수정할 가능성이 있기에 꼭 한 쓰레드 마다 별도에 SecurityContext 생성하고 등록 해주자**
+
 ### LogOut 구현
 
 ## ▶ 테스트

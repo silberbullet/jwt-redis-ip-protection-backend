@@ -214,7 +214,16 @@ public class JwtTokenProvider {
          * @return Claims
          */
         private Claims getPayloadFromJwtToken(String token) {
-                return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+                Claims claims = null;
+                try {
+                        claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+                } catch (ExpiredJwtException e) {
+                        log.debug("ExpiredJwtException Token");
+                        claims = e.getClaims();
+                } catch (Exception e) {
+                        throw e;
+                }
+                return claims;
         }
 
         /**
@@ -251,7 +260,7 @@ public class JwtTokenProvider {
                 if (ObjectUtils.isEmpty(claims)) {
                         throw new JwtException("JWT Token Payload 가 존재 하지 않습니다.");
                 } else {
-                        String userId = claims.get("userId").toString();
+                        String userId = claims.get("sub").toString();
                         String clientIp = claims.get("clientIp").toString();
 
                         LoginResponse loginResponse = new LoginResponse();
@@ -263,6 +272,30 @@ public class JwtTokenProvider {
                         return this.createAccessToken(authenticationToken);
                 }
 
+        }
+
+        /**
+         * <p>
+         * accessToken 인증 AuthenticationToken 발급
+         * </p>
+         *
+         * @author gyeongwooPark
+         * @param String accessToken
+         * @return AuthenticationToken
+         */
+        public AuthenticationToken getAuthenticationToken(String token) {
+                Claims claims = this.getPayloadFromJwtToken(token);
+
+                String userId = claims.get("sub").toString();
+                String clientIp = claims.get("clientIp").toString();
+
+                LoginResponse loginResponse = new LoginResponse();
+                loginResponse.setUserId(userId);
+
+                AuthenticationToken authenticationToken = new AuthenticationToken(loginResponse, clientIp,
+                                false, null);
+
+                return authenticationToken;
         }
 
         /**
