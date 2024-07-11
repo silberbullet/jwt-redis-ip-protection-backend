@@ -23,6 +23,8 @@ properties:
     url: http://localhost:8080
   login:
     url: /api/login
+  logout:
+    url: /api/logout
   # JWT Token
   jwt:
     domain: localhost

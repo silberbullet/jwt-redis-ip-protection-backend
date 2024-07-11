@@ -17,6 +17,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import com.develop.backend.security.filter.AuthenticationFilter;
 import com.develop.backend.security.filter.JwtTokenFilter;
+import com.develop.backend.security.filter.LogOutFilter;
 import com.develop.backend.security.handler.AuthenticationFailHandler;
 import com.develop.backend.security.handler.AuthenticationSuccessHandler;
 import com.develop.backend.security.provider.JwtTokenProvider;
@@ -44,6 +45,8 @@ public class SecurityConfig {
 
     @Value("${properties.login.url}")
     private String loginUrl;
+    @Value("${properties.logout.url}")
+    private String logoutUrl;
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
@@ -78,7 +81,7 @@ public class SecurityConfig {
 
     /**
      * <p>
-     * JwtFilter 등록
+     * JwtTokenFilter 등록
      * </p>
      * 
      * @author gyeongwooPark
@@ -86,7 +89,23 @@ public class SecurityConfig {
      */
     @Bean
     public JwtTokenFilter jwtTokenFilter() {
+
         return new JwtTokenFilter(jwtTokenProvider);
+    }
+
+    /**
+     * <p>
+     * Custom LogoutFilter 등록 LogOut 클래스
+     * </p>
+     * 
+     * @author gyeongwooPark
+     * @return LogoutFilter
+     */
+    @Bean
+    public LogOutFilter logOutFilter() {
+
+        RequestMatcher permitUrlMatcher = new AntPathRequestMatcher(logoutUrl, HttpMethod.POST.name());
+        return new LogOutFilter(permitUrlMatcher, jwtTokenProvider);
     }
 
     /**
@@ -113,10 +132,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(author -> author
                         // 특정 엔드포인트 접근 허용 처리
                         .requestMatchers("/api/login/**").permitAll()
+                        .requestMatchers("/api/logout/**").permitAll()
                         // 그 외 모든 요청은 인증 필수 (jwt 토큰 인증)
                         .anyRequest().authenticated())
                 .addFilterAfter(jwtTokenFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(authenticationFilter(), JwtTokenFilter.class);
+                .addFilterBefore(authenticationFilter(), JwtTokenFilter.class)
+                .addFilterBefore(logOutFilter(), AuthenticationFilter.class);
 
         return http.build();
     }

@@ -218,4 +218,15 @@ sequenceDiagram
 
 ### LogOut 구현
 
+1. **LogOutFilter**
+   - logoutUrl과 일치 시, Cookie에 AccessToken 유무 확인
+   - AccessToken 미존재 시, 400 에러 반환
+   - AccessToken 존재 시, Redis에 AccessToken와 RefreshToken 삭제
+   - 헤더에 쿠키 연장 시간을 0초로 세팅 후 반환
+
 ## ▶ 테스트
+
+<img src="src\main\resources\static\images\security_test_1.PNG", height="100x", width="100px">
+<img src="src\main\resources\static\images\security_test_2.PNG", height="100x", width="100px">
+<img src="src\main\resources\static\images\security_test_3.PNG", height="100x", width="100px">
+<img src="src\main\resources\static\images\security_test_4.PNG", height="100x", width="100px">

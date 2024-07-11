@@ -362,4 +362,27 @@ public class JwtTokenProvider {
 
                 return response;
         }
+
+        /**
+         * <p>
+         * accessToken 헤더에 삭제
+         * </p>
+         *
+         * @author gyeongwooPark
+         */
+        public HttpServletResponse deleteTokenInCookie(String accessToken, HttpServletResponse response) {
+
+                ResponseCookie accessCookie = ResponseCookie
+                                .from("accessToken", accessToken)
+                                .domain(domain)
+                                .path("/")
+                                .httpOnly(false)
+                                .maxAge(0)
+                                .secure(false)
+                                .build();
+
+                response.setHeader("Set-Cookie", accessCookie.toString());
+
+                return response;
+        }
 }
