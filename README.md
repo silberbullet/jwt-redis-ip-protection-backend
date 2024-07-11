@@ -215,6 +215,18 @@ sequenceDiagram
      - 등록이 없다면 그 뒤에 AnonymousAuthenticationFilter, ExceptionTranslationFilter, AuthorizationFilter에서 요청이 거부되고 403 혹은 401 에러를 반환한다.
      - SecurityContextHolder은 Spring Security 전역 객체라 생각해야한다. 다음 필터들이 인증된 객체를 가지고 security 프로세스를 흘러가기에 요청 쓰레드 마다 인증이 되었다면 인증 객체를 꼭 등록이 필요하다
      - **Spring Security 공식 문서에도 나와 있지만 SecurityContextHolder는 기본적으로 스레드 로컬 변수를 사용하여 보안 컨텍스트를 관리하는데, SecurityContextHolder.getContext() 메서드를 사용하여 보안 컨텍스트를 설정할 때, 동일한 보안 컨텍스트를 여러 스레드에서 동시에 접근하고 수정할 가능성이 있기에 꼭 한 쓰레드 마다 별도에 SecurityContext 생성하고 등록 해주자**
+```Java
+// 인증 객체 발급
+AuthenticationToken authenticationToken = jwtTokenProvider.getAuthenticationToken(accessToken);
+
+SecurityContext context = SecurityContextHolder.createEmptyContext();
+context.setAuthentication(authenticationToken);
+
+// SecurityContextHolder 인증 객체 저장
+SecurityContextHolder.setContext(context);
+```
+      
+
 
 ### LogOut 구현
 
@@ -226,7 +238,17 @@ sequenceDiagram
 
 ## ▶ 테스트
 
-<img src="src\main\resources\static\images\security_test_1.PNG", height="100x", width="100px">
-<img src="src\main\resources\static\images\security_test_2.PNG", height="100x", width="100px">
-<img src="src\main\resources\static\images\security_test_3.PNG", height="100x", width="100px">
-<img src="src\main\resources\static\images\security_test_4.PNG", height="100x", width="100px">
+### Authentication 프로세스 통한 토큰 발급과 Redis에 저장
+![security_test_1](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/aeda1076-396c-4ecb-a160-2687c7215c1e)
+
+#### Redis
+![security_test_2](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/7b44b57c-8e99-4577-b6b9-a50be425baf3)
+*****
+
+### Jwt Verification프로세스 토큰으로 /ping API 접근
+![security_test_3](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/0ceaee9a-a69e-46fc-b1d1-f65b9cf17689)
+*****
+
+### LogOut 프로세스 통한 토큰 초기화 
+![security_test_4](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/899e503a-c715-4712-b948-0db779039949)
+
