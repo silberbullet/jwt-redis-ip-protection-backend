@@ -1,12 +1,26 @@
 # jwt-redis-ip-protection-backend
 
-> Spring Security + JWT + Redis에 IP 검증을 이용한 보안 필터 개발하기 <br>
-> JWT 토큰만으로 보안을 지킬 수 있는가 의문을 시작으로 고도화 해보는 프로젝트 <br>
+> > #### 배경
+> >
+> > 사내 CRM 프로젝트에서 기존 서버 사이드 JSP 프로젝트를 Cilent를 Vue로 전환하면서 Server가 stateless 형식을 가지고 의존성을 분리 시키는 작업이 필요했다.
+> > 일반적인 Spring Security, JWT, Redis 방식으로 보안성을 증가 시키고 분리시키는 기획을 가졌지만 항상 Token 탈취 우려가 있어 Client IP 까지 추가적으로 넣어 해당 컴퓨터로 로그인한 사용자만 우리 서버를 이용하는 방식으로 전략 짜보았다. 이를 전면 개발해보고 개선 사항을 기록한다.
+> > Spring Security + JWT + Redis에 IP 검증을 이용한 보안 필터 개발하기.
+> > JWT 토큰만으로 보안을 지킬 수 있는가 의문을 시작으로 고도화 작업.
 >
 > > #### 목표
 > >
 > > Client가 JWT 토큰을 발급 시 XSS로 인한 토큰 탈취를 방지하기 위한 Cookie HTTPS 설정 추가 ( 브라우저에서 토큰 접근 불가 )
 > > Client가 JWT 토큰을 탈취 당할 시, 토큰에 저장된 IP와 Request IP를 검증을 통해 CSRF를 방지 고도화
+
+## 목차
+
+1. [분석](##-▶-분석)
+2. [설계](##-▶-설계)
+3. [구현](##-▶-구현)
+4. [테스트](##-▶-테스트)
+5. [Problem-Solving and Key Considerations](##-▶-Problem-Solving-and-Key-Considerations)
+
+---
 
 ## ▶ 분석
 
@@ -215,6 +229,7 @@ sequenceDiagram
      - 등록이 없다면 그 뒤에 AnonymousAuthenticationFilter, ExceptionTranslationFilter, AuthorizationFilter에서 요청이 거부되고 403 혹은 401 에러를 반환한다.
      - SecurityContextHolder은 Spring Security 전역 객체라 생각해야한다. 다음 필터들이 인증된 객체를 가지고 security 프로세스를 흘러가기에 요청 쓰레드 마다 인증이 되었다면 인증 객체를 꼭 등록이 필요하다
      - **Spring Security 공식 문서에도 나와 있지만 SecurityContextHolder는 기본적으로 스레드 로컬 변수를 사용하여 보안 컨텍스트를 관리하는데, SecurityContextHolder.getContext() 메서드를 사용하여 보안 컨텍스트를 설정할 때, 동일한 보안 컨텍스트를 여러 스레드에서 동시에 접근하고 수정할 가능성이 있기에 꼭 한 쓰레드 마다 별도에 SecurityContext 생성하고 등록 해주자**
+
 ```Java
 // 인증 객체 발급
 AuthenticationToken authenticationToken = jwtTokenProvider.getAuthenticationToken(accessToken);
@@ -225,8 +240,6 @@ context.setAuthentication(authenticationToken);
 // SecurityContextHolder 인증 객체 저장
 SecurityContextHolder.setContext(context);
 ```
-      
-
 
 ### LogOut 구현
 
@@ -239,16 +252,57 @@ SecurityContextHolder.setContext(context);
 ## ▶ 테스트
 
 ### Authentication 프로세스 통한 토큰 발급과 Redis에 저장
+
 ![security_test_1](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/aeda1076-396c-4ecb-a160-2687c7215c1e)
 
 #### Redis
+
 ![security_test_2](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/7b44b57c-8e99-4577-b6b9-a50be425baf3)
-*****
+
+---
 
 ### Jwt Verification프로세스 토큰으로 /ping API 접근
-![security_test_3](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/0ceaee9a-a69e-46fc-b1d1-f65b9cf17689)
-*****
 
-### LogOut 프로세스 통한 토큰 초기화 
+![security_test_3](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/0ceaee9a-a69e-46fc-b1d1-f65b9cf17689)
+
+---
+
+### LogOut 프로세스 통한 토큰 초기화
+
 ![security_test_4](https://github.com/silberbullet/jwt-redis-ip-protection-backend/assets/80805198/899e503a-c715-4712-b948-0db779039949)
 
+## ▶ Problem-Solving and Key Considerations
+
+1.**SecurityContextHolder 다루기**
+
+- Spring Security 공식 문서에도 나와 있지만 SecurityContextHolder는 기본적으로 스레드 로컬 변수를 사용하여 보안 컨텍스트를 관리하는데, **SecurityContextHolder.getContext() 메서드를 사용하여 보안 컨텍스트를 설정할 때, 동일한 보안 컨텍스트를 여러 스레드에서 동시에 접근하고 수정할 가능성이 있기에 꼭 한 쓰레드 마다 별도에 SecurityContext 생성하고 등록 해주자**
+
+```Java
+// 인증 객체 발급
+AuthenticationToken authenticationToken = jwtTokenProvider.getAuthenticationToken(accessToken);
+
+SecurityContext context = SecurityContextHolder.createEmptyContext();
+context.setAuthentication(authenticationToken);
+
+// SecurityContextHolder 인증 객체 저장
+SecurityContextHolder.setContext(context);
+```
+
+2.**만료된 JWT 토큰에서 Client IP 가져오기**
+
+- 기획 했던 것 중 제일 핵심은 AccessToken에서 Client IP와 Request객체 요청 IP를 비교하여 Servlet으로 넘기는 과정이다. 이에 JwtTokenFilter에서 JWT 토큰을 파싱 후 payload에서 로그인 한 Client IP를 가져오는 방식이 필연적이였다. **만약 만료가 된 JWT토큰을 파싱하게 된다면 ExpiredJwtException 예외 처리를 하게 된다** 이에 예외 처리에 따라 Handling을 하는게 정말 중요했다. 만료 된 토큰 일지라도 요청을 보낸 컴퓨터가 인증을 했던 사용자 인지 확인을 꼭 해야했다.
+
+```Java
+private Claims getPayloadFromJwtToken(String token) {
+   Claims claims = null;
+   try {
+       claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+   } catch (ExpiredJwtException e) {
+      log.debug("ExpiredJwtException Token");
+      claims = e.getClaims();
+   } catch (Exception e) {
+      throw e;
+   }
+     return claims;
+   }
+```
