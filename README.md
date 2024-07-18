@@ -306,3 +306,5 @@ private Claims getPayloadFromJwtToken(String token) {
      return claims;
    }
 ```
+
+3.**AOP 적용하여 메타데이터 생성하기**

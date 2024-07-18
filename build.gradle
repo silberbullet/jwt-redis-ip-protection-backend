@@ -30,10 +30,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-logging'  // Spring Boot 로깅 스타터 (SLF4J와 Logback 포함)
-
+    implementation 'org.springframework.boot:spring-boot-starter-aop' // aop 추가
+	
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	// Lombok
+	
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
