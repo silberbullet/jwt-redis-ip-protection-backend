@@ -296,7 +296,10 @@ private Claims getPayloadFromJwtToken(String token) {
 ```
 
 3.**AOP 적용하여 메타데이터 생성하기**
+- **참고**
+  https://github.com/silberbullet/jwt-redis-ip-protection-backend/blob/e90c36ff23f680ae92d0b77f498d2c4e03d8b1e9/src/main/java/com/develop/backend/aspect/UserAspect.java#L30
 
 - 로그인 한 사용자는 Insert, update 등의 CRUD 작업을 행 할시, DB에 등록 / 수정 사용자, IP, 날짜를 공통적으로 세팅하기 위해 AOP 를 추가 하였다. AOP를 통해 로그, 트랙잰션 관리, 보안 관련 해서 다양한 공통 모듈 처리를 할 수 있지만 여기서는 보안 역할로 AOP를 만들었다.
 
 - 각 Controller 안에서 method 수행 시, 요청 VO가 CMMaster 를 상속 받고 있다면 userId, userIp가 세팅이 되도록 하였다.
+
