@@ -1,14 +1,14 @@
 # jwt-redis-ip-protection-backend
 
->  #### 배경
-> >
+> #### 배경
+>
 > > 사내 CRM 프로젝트에서 기존 서버 사이드 JSP 프로젝트를 Cilent를 Vue로 전환하면서 Server가 stateless 형식을 가지고 의존성을 분리 시키는 작업이 필요했다.
 > > 일반적인 Spring Security, JWT, Redis 방식으로 보안성을 증가 시키고 분리시키는 기획을 가졌지만 항상 Token 탈취 우려가 있어 Client IP 까지 추가적으로 넣어 해당 컴퓨터로 로그인한 사용자만 우리 서버를 이용하는 방식으로 전략 짜보았다. 이를 전면 개발해보고 개선 사항을 기록한다.
 > > Spring Security + JWT + Redis에 IP 검증을 이용한 보안 필터 개발하기.
 > > JWT 토큰만으로 보안을 지킬 수 있는가 의문을 시작으로 고도화 작업.
 >
->  #### 목표
-> >
+> #### 목표
+>
 > > Client가 JWT 토큰을 발급 시 XSS로 인한 토큰 탈취를 방지하기 위한 Cookie HTTPS 설정 추가 ( 브라우저에서 토큰 접근 불가 )
 > > Client가 JWT 토큰을 탈취 당할 시, 토큰에 저장된 IP와 Request IP를 검증을 통해 CSRF를 방지 고도화
 
@@ -229,7 +229,6 @@ sequenceDiagram
      - 등록이 없다면 그 뒤에 AnonymousAuthenticationFilter, ExceptionTranslationFilter, AuthorizationFilter에서 요청이 거부되고 403 혹은 401 에러를 반환한다.
      - SecurityContextHolder은 Spring Security 전역 객체라 생각해야한다. 다음 필터들이 인증된 객체를 가지고 security 프로세스를 흘러가기에 요청 쓰레드 마다 인증이 되었다면 인증 객체를 꼭 등록이 필요하다
 
-
 ### LogOut 구현
 
 1. **LogOutFilter**
@@ -297,3 +296,7 @@ private Claims getPayloadFromJwtToken(String token) {
 ```
 
 3.**AOP 적용하여 메타데이터 생성하기**
+
+- 로그인 한 사용자는 Insert, update 등의 CRUD 작업을 행 할시, DB에 등록 / 수정 사용자, IP, 날짜를 공통적으로 세팅하기 위해 AOP 를 추가 하였다. AOP를 통해 로그, 트랙잰션 관리, 보안 관련 해서 다양한 공통 모듈 처리를 할 수 있지만 여기서는 보안 역할로 AOP를 만들었다.
+
+- 각 Controller 안에서 method 수행 시, 요청 VO가 CMMaster 를 상속 받고 있다면 userId, userIp가 세팅이 되도록 하였다.

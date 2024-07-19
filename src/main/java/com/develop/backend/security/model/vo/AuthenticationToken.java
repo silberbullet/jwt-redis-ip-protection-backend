@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import com.develop.backend.security.model.req.LoginRequest;
 import com.develop.backend.security.model.res.LoginResponse;
 
+import io.jsonwebtoken.lang.Objects;
 import lombok.Getter;
 
 /**
@@ -77,7 +78,12 @@ public class AuthenticationToken extends AbstractAuthenticationToken {
 
     @Override
     public Object getPrincipal() {
-        return null;
+
+        if (!Objects.isEmpty(loginResponse)) {
+            return loginResponse.getUserId();
+        } else {
+            return null;
+        }
     }
 
 }
